@@ -678,8 +678,10 @@ async function dSync(manual){
       else pull=confirm("Dropbox-এ ভিন্ন ডেটা আছে।\n\nOK = Dropbox-এর ডেটা নিন (এই ডিভাইসের ডেটা বদলে যাবে)\nCancel = এই ডিভাইসের ডেটা দিয়ে Dropbox প্রতিস্থাপন (আগেরটা backups ফোল্ডারে থাকবে)");
       if(pull){var d=await dDown(tk);if(!dValid(d.obj))throw new Error("Dropbox-এর ফাইল ঠিক নয়");dApply(d.obj,d.rev);dShow("✓ Dropbox থেকে নামানো হয়েছে ("+t+")")}
       else{await dPush(tk,m);dShow("✓ Dropbox প্রতিস্থাপিত ("+t+")")}}
+  await dDaily(tk);
   }catch(e){dShow("⚠ সিঙ্ক হয়নি: "+e.message+" (পরে আবার চেষ্টা হবে)")}
   finally{dSt.busy=0}}
+async function dDaily(tk){var k=dayKey();if(D.bk===k||D.dirty)return;try{await dUp(tk,{".tag":"overwrite"},"/backups/daily-"+k+".json");D.bk=k;dSave()}catch(e){}}
 function dOut(){if(!confirm("এই ডিভাইস থেকে Dropbox লগআউট হবে (ডেটা থাকবে)। চালিয়ে যাবেন?"))return;D={key:D.key};dSave();render()}
 function dExp(){var b=new Blob([JSON.stringify(dPack())],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="vocab_backup_"+dayKey()+".json";document.body.appendChild(a);a.click();a.remove()}
 function dImp(el){var f=el.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{
