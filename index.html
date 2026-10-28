@@ -121,6 +121,9 @@ details.hlbox summary{cursor:pointer;color:var(--p);font-weight:600;margin-top:6
 .parts{margin-top:1.1em}.prn{font-size:.8em;color:var(--mu);margin-top:.25em}
 svg text{fill:var(--mu);font-size:11px;font-family:inherit}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;z-index:9;font-size:15px}
+.wf{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.wf button{border:1px solid var(--ln);background:var(--sf);color:var(--ink);border-radius:999px;padding:6px 12px;font:inherit;font-size:14px;cursor:pointer}.wf button.on{background:var(--p);color:var(--onp,#fff);border-color:var(--p)}
+.ro .ur{display:none}
+@media(max-width:640px){.bar{gap:10px}.logo{font-size:18px}nav{order:3;width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}nav button{flex:none;white-space:nowrap;padding:8px 12px}}
 </style>
 </head>
 <body>
@@ -186,6 +189,8 @@ function testedSet(){var s={};S.results.forEach(function(r){if(S.covFrom&&r.at<=
 function go(t){tab=t;render()}
 function render(keep){
   var tabs=[["dash","ড্যাশবোর্ড"],["add","শব্দ যোগ করুন"],["test","টেস্ট দিন"],["quran","কুরআন বোর্ড"],["set","সেটিং"]];
+  if(RO){tabs=tabs.filter(function(t){return t[0]==="dash"||t[0]==="test"});if(tab!=="dash"&&tab!=="test")tab="dash"}
+  document.body.classList.toggle("ro",RO);
   $("#nav").innerHTML=tabs.map(function(t){return '<button class="'+(tab===t[0]?"on":"")+'" onclick="go(\''+t[0]+'\')">'+t[1]+'</button>'}).join("");
   $("#app").innerHTML=tab==="dash"?dash():tab==="add"?addView():tab==="set"?setView():tab==="quran"?quranView():testView();
   if(!keep)window.scrollTo(0,0);if(tab==="quran"){if($("#qs")){rsug();rseq()}dl()}if(tab==="add"){rpe();hdraw();hprev()}sh()
@@ -386,15 +391,27 @@ function addView(){
    '<div><label class="f">নোট (কোথায় কী অর্থে ব্যবহৃত হয়)</label><textarea id="nn" dir="auto" style="min-height:84px" placeholder="যেমন: কুরআনে সাধারণত ... অর্থে ব্যবহৃত হয়">'+esc(v.note||"")+'</textarea></div>'+
    '<div class="row"><button class="btn" onclick="saveWord()">'+(e?"হালনাগাদ করুন":"শব্দ যোগ করুন")+'</button>'+(e?'<button class="btn gh" onclick="cancelEdit()">বাতিল</button>':"")+'</div></div></div>';
   if(!e)h+='<div class="card" style="margin-top:14px"><h3>একসাথে অনেক শব্দ যোগ করুন</h3><label class="f">প্রতি লাইনে একটি: আরবি | অর্থ | মূল | পদ | নোট | মূলের অর্থ | কুরআনে সংখ্যা | ভাঙা অংশ | উচ্চারণ | মূল ধাতু | ধাতুর অর্থ | সূরা-আয়াত (একাধিক হলে ; দিয়ে আলাদা, যেমন: সূরা আলে ইমরান — ৩:৩৬; সূরা আন-নাহল — ১৬:৯৮) (প্রথম দুটি আবশ্যক, বাকিগুলো ফাঁকা রাখা যায়; শুধু "আরবি - অর্থ" লিখলেও চলবে)</label><textarea id="bulk" dir="auto" placeholder="كِتَابٌ | বই | ك ت ب | ইসম | বইয়ের অর্থে | লেখা | ২৩০&#10;كَتَبَ | সে লিখেছে | ك ت ب | ফিল | | লেখা | ৪০&#10;فِي | মধ্যে | | হরফ"></textarea><div class="row" style="margin-top:10px"><button class="btn gh" onclick="addBulk()">সবগুলো যোগ করুন</button><button class="btn gh" onclick="expWords()">বর্তমান শব্দগুলো টেক্সটে দেখান</button></div></div>';
-  h+='</div><div class="card"><div class="row sp"><h3>আপনার শব্দতালিকা</h3><span class="badge flat">'+bn(S.words.length)+'টি</span></div><input type="text" placeholder="আরবি, অর্থ, রুট বা বাংলা উচ্চারণ লিখে খুঁজুন..." value="'+esc(wq)+'" oninput="wq=this.value;wlist()" id="sq">';
+  h+='</div><div class="card"><div class="row sp"><h3>আপনার শব্দতালিকা</h3><span class="badge flat">'+bn(S.words.length)+'টি</span></div><input type="text" placeholder="আরবি, অর্থ, রুট বা বাংলা উচ্চারণ লিখে খুঁজুন..." value="'+esc(wq)+'" oninput="wq=this.value;wlist()" id="sq"><div class="wf" id="wfb">'+wfBar()+'</div><div id="wfc" style="color:var(--mu);font-size:13px;margin-top:6px">'+bn(fw().length)+'টি শব্দ দেখাচ্ছে</div>';
   return h+'<div class="wl" id="wl" style="margin-top:8px">'+wrows(fw())+'</div></div></div>';
 }
-function fw(){var q=wq.trim();return q?rank(q).map(function(x){return x.w}):S.words.slice().reverse()}
+var wf={};
+function wbrk(){var s={};S.words.forEach(function(w){(w.parts||[]).forEach(function(p){var E=linkEntry(p,w.id);if(E)s[E.id]=1})});return s}
+function fw(){var q=wq.trim(),l=q?rank(q).map(function(x){return x.w}):S.words.slice().reverse();
+  if(!Object.keys(wf).some(function(k){return wf[k]}))return l;
+  var cm={};S.chapters.forEach(function(c){c.ayahs.forEach(function(a){a.w.forEach(function(x){cm[x.id]=(cm[x.id]||0)+1})})});
+  var bk=wf.brk?wbrk():null,ps=PL.filter(function(p){return wf[p]});
+  l=l.filter(function(w){var n=cm[w.id]||0;if(wf.top&&!n)return false;if(wf.unu&&n)return false;if(bk&&!bk[w.id])return false;
+    if(ps.length){var e=effPos(w);if(!ps.some(function(p){return e.indexOf(p)>-1}))return false}return true});
+  if(wf.top)l.sort(function(a,b){return(cm[b.id]||0)-(cm[a.id]||0)});return l}
+var WFL=[["top","বেশি ব্যবহৃত"],["unu","অব্যবহৃত"],["brk","শব্দ ভাঙার কাজে ব্যবহৃত"],["ইসম","ইসম"],["ফিল","ফিল"],["হরফ","হরফ"]];
+function wfBar(){var any=Object.keys(wf).some(function(k){return wf[k]});
+  return '<button class="'+(any?"":"on")+'" onclick="wft(\'all\')">সব</button>'+WFL.map(function(x){return '<button class="'+(wf[x[0]]?"on":"")+'" onclick="wft(\''+x[0]+'\')">'+x[1]+'</button>'}).join("")}
+function wft(k){if(k==="all")wf={};else{wf[k]=!wf[k];if(k==="top"&&wf.top)wf.unu=0;if(k==="unu"&&wf.unu)wf.top=0}var b=$("#wfb");if(b)b.innerHTML=wfBar();wlist()}
 function wrows(ws){if(!ws.length)return '<div class="empty">'+(S.words.length?"কিছু পাওয়া যায়নি।":"কোনো শব্দ নেই। বাঁ দিকের ফর্ম থেকে শব্দ যোগ করুন।")+'</div>';var ts=testedSet();
   return '<table>'+ws.map(function(w){
-    var uc=useCount(w.id),meta=chips(w)+(uc?'<span class="chip">বোর্ডে: '+bn(uc)+' বার</span>':'')+(ts[w.id]?'<span class="chip ok">টেস্টে এসেছে</span>':'');
+    var uc=useCount(w.id),meta=chips(w)+'<span class="chip'+(uc?" ok":"")+'">বোর্ডে: '+bn(uc)+' বার</span>'+(ts[w.id]?'<span class="chip ok">টেস্টে এসেছে</span>':'');
     return '<tr><td><div class="aw"><bdi>'+esc(w.w)+'</bdi></div><div style="color:var(--mu)"><bdi>'+esc(w.m)+'</bdi></div>'+(meta?'<div>'+meta+'</div>':'')+(w.note?'<div class="nt">'+esc(w.note)+'</div>':'')+'</td><td><button class="btn gh sm" onclick="editW(\''+w.id+'\')" aria-label="সম্পাদনা" title="সম্পাদনা">✎</button> <button class="btn dg sm" onclick="delW(\''+w.id+'\')" aria-label="মুছুন" title="মুছুন">✕</button></td></tr>'}).join("")+'</table>'}
-function wlist(){$("#wl").innerHTML=wrows(fw())}
+function wlist(){var l=fw();$("#wl").innerHTML=wrows(l);var c=$("#wfc");if(c)c.textContent=bn(l.length)+"টি শব্দ দেখাচ্ছে"}
 function editW(id){editId=id;tab="add";render()}
 function closeEd(){var m=$("#edm");if(m)m.remove();document.body.style.overflow=""}
 function cancelEdit(){var m=!!$("#edm");editId=null;closeEd();render(m)}
@@ -693,11 +710,13 @@ function dImp(el){var f=el.files[0];if(!f)return;var r=new FileReader();r.onload
   if(!j||!Array.isArray(j.words)||!Array.isArray(j.results)){alert("এটি এই অ্যাপের ব্যাকআপ ফাইল নয়");return}
   if(!confirm("এই ডিভাইসের বর্তমান ডেটা এই ফাইলের ডেটা দিয়ে প্রতিস্থাপিত হবে। চালিয়ে যাবেন?"))return;
   S=j;norm();save();render();toast("ব্যাকআপ ফেরানো হয়েছে")}catch(e){alert("ফাইল পড়া যায়নি")}};r.readAsText(f);el.value=""}
+var RO=false;try{RO=localStorage.getItem("vocab_ro")==="1"}catch(e){}
+function roT(){RO=!RO;try{localStorage.setItem("vocab_ro",RO?"1":"0")}catch(e){}tab="dash";render()}
 function dCard(){
   var inp='width:100%;padding:10px;border:1px solid var(--ln);border-radius:10px;font:inherit;box-sizing:border-box',x='<div class="card" style="margin-top:14px"><h3>Dropbox সিঙ্ক ও ব্যাকআপ</h3>';
   if(!D.rt)x+='<p style="color:var(--mu);margin:0 0 10px">একবার যুক্ত করলে সব ডিভাইসে ডেটা নিজে নিজে সিঙ্ক হবে। (এখন ডেটা শুধু এই ব্রাউজারে আছে।)</p><p style="margin:0 0 6px;font-size:13px">Dropbox অ্যাপে <b>Redirect URI</b> হিসেবে এটি দিন:</p><input readonly value="'+esc(dRedirect())+'" onclick="this.select()" style="'+inp+';margin-bottom:10px"><input id="dkey" placeholder="Dropbox অ্যাপ কী (App key)" value="'+esc(D.key||"")+'" style="'+inp+';margin-bottom:10px"><div class="row"><button class="btn sm" onclick="dConnect()">Dropbox-এ যুক্ত করুন</button></div>';
   else x+='<p id="dstat" style="margin:0 0 12px">'+esc(dSt.msg||(D.dirty?"সিঙ্কের অপেক্ষায়…":"✓ যুক্ত আছে"))+'</p><div class="row"><button class="btn sm" onclick="dSync(1)">↻ এখনই সিঙ্ক</button><button class="btn gh sm" onclick="dOut()">লগআউট</button></div>';
-  x+='<div class="row" style="margin-top:12px"><button class="btn gh sm" onclick="dExp()">⬇ ব্যাকআপ ফাইল</button><label class="btn gh sm" style="margin:0">⬆ ব্যাকআপ ফেরান<input type="file" accept=".json" onchange="dImp(this)" style="display:none"></label></div></div>';
+  x+='<div class="row" style="margin-top:12px"><button class="btn gh sm" onclick="dExp()">⬇ ব্যাকআপ ফাইল</button><label class="btn gh sm" style="margin:0">⬆ ব্যাকআপ ফেরান<input type="file" accept=".json" onchange="dImp(this)" style="display:none"></label><button class="btn gh sm" onclick="roT()">'+(RO?"✎ এডিট মোড চালু করুন":"📱 শুধু টেস্ট মোড")+'</button></div></div>';
   return x}
 async function dInit(){
   if(SRV)return;
