@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>শব্দভান্ডার MCQ প্র্যাক্টিস</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#3a4bd1">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <style id="fontcss"></style>
 <style>
 :root{--bg:#f2f4fa;--sf:#fff;--ink:#151a33;--mu:#68708f;--ln:#e1e5f2;--p:#3a4bd1;--pl:#e8ebfd;--ok:#12865a;--okl:#e2f5ec;--bad:#cf3d49;--badl:#fde8ea;--wr:#b7791f;--pi:#3a4bd1;--pf:#12865a;--ph:#b0379f;--onp:#fff;--hc1:#d9342b;--hc2:#1e6fd9;--hc3:#1f9d55;--hc4:#d97706;--hc5:#8e44ad;--hc6:#0e9aa7;--sh:0 1px 2px rgba(21,26,51,.06),0 6px 20px rgba(21,26,51,.05);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -626,7 +630,7 @@ async function dConnect(){
   var key=($("#dkey").value||"").trim();if(!key){toast("আগে Dropbox অ্যাপ কী দিন");return}
   D.key=key;dSave();
   var v=b64u(crypto.getRandomValues(new Uint8Array(48))),ch=b64u(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v)));
-  sessionStorage.setItem("dpk",v);
+  localStorage.setItem("dpk",v);
   location.href="https://www.dropbox.com/oauth2/authorize?"+new URLSearchParams({client_id:key,response_type:"code",code_challenge:ch,code_challenge_method:"S256",token_access_type:"offline",redirect_uri:dRedirect()})}
 async function dTok(b){var r=await fetch("https://api.dropboxapi.com/oauth2/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams(b)}),j=await r.json();if(!r.ok)throw new Error(j.error_description||j.error||"টোকেন ত্রুটি");return j}
 async function dAuth(){
@@ -635,9 +639,9 @@ async function dAuth(){
   var j=await dTok({grant_type:"refresh_token",refresh_token:D.rt,client_id:D.key});
   D.at=j.access_token;D.exp=Date.now()+j.expires_in*1000;dSave();return D.at}
 async function dCallback(){
-  var p=new URLSearchParams(location.search),c=p.get("code"),v=sessionStorage.getItem("dpk");
+  var p=new URLSearchParams(location.search),c=p.get("code"),v=localStorage.getItem("dpk");
   if(!c||!v||!D.key)return false;
-  history.replaceState(null,"",location.pathname);sessionStorage.removeItem("dpk");
+  history.replaceState(null,"",location.pathname);localStorage.removeItem("dpk");
   try{var j=await dTok({grant_type:"authorization_code",code:c,code_verifier:v,client_id:D.key,redirect_uri:dRedirect()});
     D.rt=j.refresh_token;D.at=j.access_token;D.exp=Date.now()+j.expires_in*1000;D.rev=null;dSave();toast("Dropbox যুক্ত হয়েছে");render();return true}
   catch(e){toast("লগইন হয়নি: "+e.message);return false}}
